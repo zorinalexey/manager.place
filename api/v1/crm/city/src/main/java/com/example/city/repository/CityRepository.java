@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository;
 
 import java.awt.print.Pageable;
 import java.util.List;
-@Repository
-public interface CityRepository extends JpaRepository<City, String> {
+import java.util.Optional;
+import java.util.UUID;
 
+@Repository
+public interface CityRepository extends JpaRepository<City, UUID> {
 }

@@ -1,3 +1,7 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changeset/city-table.sql
+  - include:
+      file: db/changelog/changeset/add-ext-uuid.sql
+  - include:
+      file: db/changelog/changeset/alter-city-table-id.sql

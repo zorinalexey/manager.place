@@ -6,6 +6,9 @@ spring:
     url: jdbc:postgresql://localhost:5432/lidofon
     username: user
     password: password
+  cloud:
+    compatibility-verifier:
+      enabled: false
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

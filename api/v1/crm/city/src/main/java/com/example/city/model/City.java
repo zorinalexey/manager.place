@@ -1,16 +1,24 @@
 package com.example.city.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "cities")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class City {
     @Id
-    @Column(name = "id", nullable = false, length = 40)
+    //@Column(name = "id", nullable = false, length = 40)
     @GeneratedValue(strategy = GenerationType.UUID)
+    @UuidGenerator
     private UUID id;
 
     @Column(name = "int_id", nullable = false)
