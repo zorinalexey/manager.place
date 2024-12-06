@@ -32,7 +32,9 @@ public class CityServiceImpl implements CityService {
         log.info("Paginated result: {}", cities.getContent());
         return cities;
     }
-
+    //sort id int id name, region name,country name,timestamps
+    //filter id int id name, region id,country id, timestamps
+    // search id int id name, region id,country id,
     @Override
     public CityDto getCity(UUID id) {
         City city = getOneCity(id);
