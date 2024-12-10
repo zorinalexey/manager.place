@@ -44,6 +44,7 @@ dependencies {
      */
     implementation("org.liquibase:liquibase-core")
     implementation("redis.clients:jedis:4.3.2")
+    implementation("org.postgresql:postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
     /**

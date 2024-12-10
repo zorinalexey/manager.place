@@ -9,6 +9,10 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false
+#liquibase --classpath=/home/ali/.gradle/caches/modules-2/files-2.1/org.postgresql/postgresql/42.7.4/264310fd7b2cd76738787dc0b9f7ea2e3b11adc1/postgresql-42.7.4.jar!/org/postgresql/Driver.class \
+# --changeLogFile=db/changelog/db.changelog-master.yaml rollback 10 \
+#--url=jdbc:postgresql://localhost:5432/lidofon?user=user&password=password \
+#--driver=org.postgresql.Driver
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

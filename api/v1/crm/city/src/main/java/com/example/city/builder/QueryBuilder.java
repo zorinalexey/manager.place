@@ -13,7 +13,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class QueryBuilder {
-    private List<String>  columns = new ArrayList<>();
+    private List<String> columns = new ArrayList<>();
     private boolean distinct = false;
     private List<String> distinctColumns;
 
@@ -27,28 +27,30 @@ public class QueryBuilder {
 
     public String queryString() {
         StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
-        if(distinct) {
-            queryStringBuilder.append("DISTINCT ").append(String.join(",",distinctColumns));
+        if (distinct) {
+            queryStringBuilder.append("DISTINCT ").append(String.join(",", distinctColumns));
         } else {
-            log.info("columns {}",columns);
-            queryStringBuilder.append(String.join(",",columns));
+            log.info("columns {}", columns);
+            queryStringBuilder.append(String.join(",", columns));
         }
         queryStringBuilder.append(" FROM ").append(tableName).append(" ");
         //join
-        queryStringBuilder.append(String.join(" ",joins)).append(" ");
+        queryStringBuilder.append(String.join(" ", joins)).append(" ");
         queryStringBuilder.append(String.join(" ", wheres));
         queryStringBuilder.append(orderBy);
         //limit
         return queryStringBuilder.toString();
     }
+
     public QueryBuilder table(String tableName) {
         setTableName(tableName);
         return this;
     }
+
     public QueryBuilder select(List<String> columnList) {
-        log.info("columns {}",columnList);
+        log.info("columns {}", columnList);
         setColumns(columnList);
-        log.info("columns {}",columns);
+        log.info("columns {}", columns);
         return this;
     }
 
@@ -58,23 +60,29 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder where(String column, String value) {
+    public QueryBuilder where(String column, String value) throws SQLException {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
-            condition
-                    .append(column)
-                    .append(" = ")
-                    .append("?");
-            parameters.add(new Parameter(value));
         } else {
             wheres.add("AND");
-            condition
-                    .append(column)
-                    .append(" = ")
-                    .append("?");
+        }
+
+//        condition
+//                .append(column)
+//                .append(" = ")
+//                .append("?");
+        //parameters.add(new Parameter(value));
+        // parameters.add(new Parameter(value));
+
+        if (isUUID(column,tableName)) {
+            condition.append(column).append("::uuid = ?");
+            parameters.add(new Parameter(UUID.fromString(value)));
+        } else {
+            condition.append(column).append(" = ?");
             parameters.add(new Parameter(value));
         }
+
         wheres.add(condition.toString());
         return this;
     }
@@ -84,9 +92,9 @@ public class QueryBuilder {
         if (wheres.isEmpty()) {
             throw new RuntimeException("Cant set OR in the beginning of the query");
         } else {
-            log.info("last {}",wheres.get(wheres.size()-1));
-            if(hasConditionBefore("AND")) {
-                wheres.add(wheres.size()-1,"(");
+            log.info("last {}", wheres.get(wheres.size() - 1));
+            if (hasConditionBefore("AND")) {
+                wheres.add(wheres.size() - 1, "(");
             }
             wheres.add("OR");
             condition.append(column).append(" = ").append(value);
@@ -95,13 +103,23 @@ public class QueryBuilder {
         wheres.add(")");
         return this;
     }
-    public QueryBuilder join(String joinTable, String key, String value, JoinType type) {
+
+    public QueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
         StringBuilder condition = new StringBuilder();
-        joins.add(type.toString()+" JOIN");
-        condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
+        joins.add(type.toString() + " JOIN");
+
+        if (isUUID(key,joinTable)) {
+            //parameters.add(new Parameter(UUID.fromString(value)));
+            condition.append(joinTable).append(" ON ").append(key).append("::uuid = ").append(value);
+        } else {
+            condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
+        }
+
+        //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         joins.add(condition.toString());
         return this;
     }
+
     //SELECT * FROM Customers
     //WHERE Country = 'Spain' AND (CustomerName LIKE 'G%' OR CustomerName LIKE 'R%');
     private boolean hasConditionBefore(String condition) {
@@ -110,6 +128,7 @@ public class QueryBuilder {
 
     public PreparedStatement buildPreparedStatement(Connection connection) throws SQLException {
         String statement = queryString().trim();
+        System.out.println("statement:" + statement);
         PreparedStatement preparedStatement = connection.prepareStatement(statement);
         for (int i = 0; i < parameters.size(); i++) {
             parameters.get(i).bind(preparedStatement, i + 1);
@@ -118,31 +137,51 @@ public class QueryBuilder {
     }
 
 
-    public void execute() {
+    public List<Map<String, String>> get() throws SQLException {
+
+        Connection connection = getConnection();
+
+        PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
+        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            List<Map<String, String>> list = new ArrayList<>();
+            while (resultSet.next()) {
+                Map<String, String> result = new HashMap<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    System.out.println(metaData.getColumnName(i)+" "+resultSet.getString(i));
+                    result.put(metaData.getColumnName(i), resultSet.getString(i));
+                }
+                list.add(result);
+            }
+            System.out.println();
+
+            return list;
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+    }
+
+    private static Connection getConnection() throws SQLException {
         String url = "jdbc:postgresql://localhost:5432/lidofon";
         String username = "user";
         String password = "password";
 
-        try (Connection connection = DriverManager.getConnection(url, username, password)) {
-            PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
+        return DriverManager.getConnection(url, username, password);
+    }
+    private boolean isUUID(String column,String table) throws SQLException {
+        DatabaseMetaData metaData =getConnection().getMetaData();
 
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                while (resultSet.next()) {
-                    System.out.println("User: " + resultSet.getString("name"));
-                    columns.forEach(column -> {
-                        try {
-                            resultSet.getString(column);
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                }
-            } catch (SQLException e) {
-                throw new SQLException(e);
+        ResultSet columns = metaData.getColumns(null, null, table, column);
+        if (columns.next()) {
+            String columnType = columns.getString("TYPE_NAME");
+            System.out.println("Column Type: " + columnType);
+            if ("uuid".equalsIgnoreCase(columnType)) {
+                System.out.println("The column is of type UUID.");
+                return true;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-
+        return false;
     }
 }
