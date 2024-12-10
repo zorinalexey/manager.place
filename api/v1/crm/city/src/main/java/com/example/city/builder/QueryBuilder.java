@@ -13,7 +13,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class QueryBuilder {
-    private List<String>  columns;
+    private List<String>  columns = new ArrayList<>();
     private boolean distinct = false;
     private List<String> distinctColumns;
 
@@ -30,6 +30,7 @@ public class QueryBuilder {
         if(distinct) {
             queryStringBuilder.append("DISTINCT ").append(String.join(",",distinctColumns));
         } else {
+            log.info("columns {}",columns);
             queryStringBuilder.append(String.join(",",columns));
         }
         queryStringBuilder.append(" FROM ").append(tableName).append(" ");
@@ -44,8 +45,10 @@ public class QueryBuilder {
         setTableName(tableName);
         return this;
     }
-    public QueryBuilder select(List<String> columns) {
-        setColumns(columns);
+    public QueryBuilder select(List<String> columnList) {
+        log.info("columns {}",columnList);
+        setColumns(columnList);
+        log.info("columns {}",columns);
         return this;
     }
 
@@ -121,13 +124,7 @@ public class QueryBuilder {
         String password = "password";
 
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
-            QueryBuilder sqlBuilder = new QueryBuilder();
-            String str = sqlBuilder.table("cities")
-                    .select(List.of("*"))
-                    .where("name","Омск").queryString();
-
-            PreparedStatement preparedStatement = sqlBuilder.buildPreparedStatement(connection);
-            System.out.println("Executing SQL: " + str);
+            PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
@@ -140,6 +137,8 @@ public class QueryBuilder {
                         }
                     });
                 }
+            } catch (SQLException e) {
+                throw new SQLException(e);
             }
         } catch (Exception e) {
             e.printStackTrace();
