@@ -25,7 +25,7 @@ public class CityApplication {
 //        System.out.println(list);
         List<Map<String,String>> list = builder
                 .table("cities")
-                .select(List.of("cities.id","cities.name","cities.region_id"))
+                .select(List.of("cities.id","cities.name","cities.region_id","regions.name AS region_name"))
                 .join("regions","cities.region_id","regions.id",JoinType.INNER)
                 .get();
         System.out.println(list);

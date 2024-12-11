@@ -5,6 +5,7 @@ import com.example.city.builder.core.Parameter;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.json.GsonBuilderUtils;
 
 import java.sql.*;
 import java.util.*;
@@ -76,7 +77,7 @@ public class QueryBuilder {
         // parameters.add(new Parameter(value));
 
         if (isUUID(column,tableName)) {
-            condition.append(column).append("::uuid = ?");
+            condition.append(column).append(" = ?");
             parameters.add(new Parameter(UUID.fromString(value)));
         } else {
             condition.append(column).append(" = ?");
@@ -108,14 +109,18 @@ public class QueryBuilder {
         StringBuilder condition = new StringBuilder();
         joins.add(type.toString() + " JOIN");
 
-        if (isUUID(key,joinTable)) {
-            //parameters.add(new Parameter(UUID.fromString(value)));
-            condition.append(joinTable).append(" ON ").append(key).append("::uuid = ").append(value);
+
+        if(value.contains(".id")) {
+            String castValue =String.format("CAST(%s as TEXT)",value);
+            condition.append(joinTable).append(" ON ").append(key).append(" = ").append(castValue);
         } else {
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         }
 
+
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
+        System.out.println("is uuid: "+isUUID(key,joinTable));
+        System.out.println("condition: " + condition);
         joins.add(condition.toString());
         return this;
     }
