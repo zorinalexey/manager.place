@@ -49,9 +49,7 @@ public class QueryBuilder {
     }
 
     public QueryBuilder select(List<String> columnList) {
-        log.info("columns {}", columnList);
         setColumns(columnList);
-        log.info("columns {}", columns);
         return this;
     }
 
@@ -69,13 +67,6 @@ public class QueryBuilder {
             wheres.add("AND");
         }
 
-//        condition
-//                .append(column)
-//                .append(" = ")
-//                .append("?");
-        //parameters.add(new Parameter(value));
-        // parameters.add(new Parameter(value));
-
         if (isUUID(column,tableName)) {
             condition.append(column).append(" = ?");
             parameters.add(new Parameter(UUID.fromString(value)));
@@ -83,7 +74,30 @@ public class QueryBuilder {
             condition.append(column).append(" = ?");
             parameters.add(new Parameter(value));
         }
-
+        wheres.add(condition.toString());
+        return this;
+    }
+    public QueryBuilder whereIn(String column, List<String> values) {
+        StringBuilder condition = new StringBuilder();
+        if (wheres.isEmpty()) {
+            wheres.add("WHERE");
+        } else {
+            wheres.add("AND");
+        }
+        condition.append(column).append(" in (").append("?").append(")");
+        parameters.add(new Parameter(values));
+        wheres.add(condition.toString());
+        return this;
+    }
+    public QueryBuilder whereNotIn(String column, List<String> values) {
+        StringBuilder condition = new StringBuilder();
+        if (wheres.isEmpty()) {
+            wheres.add("WHERE");
+        } else {
+            wheres.add("AND");
+        }
+        condition.append(column).append(" not").append(" in (").append("?").append(")");
+        parameters.add(new Parameter(values));
         wheres.add(condition.toString());
         return this;
     }
@@ -93,7 +107,6 @@ public class QueryBuilder {
         if (wheres.isEmpty()) {
             throw new RuntimeException("Cant set OR in the beginning of the query");
         } else {
-            log.info("last {}", wheres.get(wheres.size() - 1));
             if (hasConditionBefore("AND")) {
                 wheres.add(wheres.size() - 1, "(");
             }
@@ -109,8 +122,9 @@ public class QueryBuilder {
         StringBuilder condition = new StringBuilder();
         joins.add(type.toString() + " JOIN");
 
-
-        if(value.contains(".id")) {
+        //value.contains(".id")
+        System.out.println("IS UUID "+isUUID(value, joinTable));
+        if(isUUID(value, joinTable)) {
             String castValue =String.format("CAST(%s as TEXT)",value);
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(castValue);
         } else {
@@ -175,18 +189,25 @@ public class QueryBuilder {
 
         return DriverManager.getConnection(url, username, password);
     }
-    private boolean isUUID(String column,String table) throws SQLException {
-        DatabaseMetaData metaData =getConnection().getMetaData();
 
-        ResultSet columns = metaData.getColumns(null, null, table, column);
-        if (columns.next()) {
-            String columnType = columns.getString("TYPE_NAME");
-            System.out.println("Column Type: " + columnType);
-            if ("uuid".equalsIgnoreCase(columnType)) {
-                System.out.println("The column is of type UUID.");
-                return true;
+
+    private boolean isUUID(String column, String table) throws SQLException {
+        try (Connection connection = getConnection()) { // Use try-with-resources to avoid leaks
+            DatabaseMetaData metaData = connection.getMetaData();
+            try (ResultSet columns = metaData.getColumns(null, null, table, null)) {
+                System.out.println("cols "+columns);
+                if (columns.next()) { // Move to the first row
+                    String columnType = columns.getString("TYPE_NAME");
+                    System.out.println("Column Type: " + columnType);
+                    return "uuid".equalsIgnoreCase(columnType); // Check if the type is UUID
+                } else {
+                    System.out.println("Column not found: " + column);
+                }
             }
+        } catch (SQLException e) {
+            System.out.println("SQLException: " + e.getMessage());
+            throw e; // Rethrow exception for further handling
         }
-        return false;
+        return false; // Return false if no matching column is found
     }
 }

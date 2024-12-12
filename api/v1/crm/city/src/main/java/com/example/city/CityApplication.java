@@ -15,19 +15,14 @@ import java.util.Map;
 @Slf4j
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
 public class CityApplication {
-    private QueryBuilder select;
     public static void main(String[] args) throws SQLException {
         SpringApplication.run(CityApplication.class, args);
         QueryBuilder builder = new QueryBuilder();
-//        List<Map<String,String>> list =  builder
-//                .table("cities")
-//                .select(List.of("name","int_id","region_id")).get();
-//        System.out.println(list);
-        List<Map<String,String>> list = builder
+        List<Map<String,String>> citiesByRegion = builder
                 .table("cities")
-                .select(List.of("cities.id","cities.name","cities.region_id","regions.name AS region_name"))
-                .join("regions","cities.region_id","regions.id",JoinType.INNER)
+                .select(List.of("name","latitude","longitude"))
+                .whereNotIn("region_id",List.of("a1f7645b-ccc1-428a-87a5-9020c3905578"))
                 .get();
-        System.out.println(list);
+        System.out.println(citiesByRegion);
     }
 }
