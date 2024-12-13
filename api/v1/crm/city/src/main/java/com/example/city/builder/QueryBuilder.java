@@ -1,6 +1,7 @@
 package com.example.city.builder;
 
 import com.example.city.builder.CRUD.enums.JoinType;
+import com.example.city.builder.CRUD.enums.OperationType;
 import com.example.city.builder.core.Parameter;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.json.GsonBuilderUtils;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Data
@@ -25,22 +27,52 @@ public class QueryBuilder {
     private Map<String, String> binds = new HashMap<>();
 
     private List<Parameter> parameters = new ArrayList<>();
+    private Map<String, Object> createParams = new HashMap<>();
+    private OperationType operationType = OperationType.READ;
 
     public String queryString() {
-        StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
-        if (distinct) {
-            queryStringBuilder.append("DISTINCT ").append(String.join(",", distinctColumns));
-        } else {
-            log.info("columns {}", columns);
-            queryStringBuilder.append(String.join(",", columns));
+        if (operationType == OperationType.READ) {
+            StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
+            if (distinct) {
+                queryStringBuilder.append("DISTINCT ").append(String.join(",", distinctColumns));
+            } else {
+                log.info("columns {}", columns);
+                queryStringBuilder.append(String.join(",", columns));
+            }
+            queryStringBuilder.append(" FROM ").append(tableName).append(" ");
+            //join
+            queryStringBuilder.append(String.join(" ", joins)).append(" ");
+            queryStringBuilder.append(String.join(" ", wheres));
+            queryStringBuilder.append(orderBy);
+            //limit
+            return queryStringBuilder.toString();
+        } else if (operationType == OperationType.CREATE) {
+            StringBuilder queryStringBuilder = new StringBuilder("INSERT INTO ")
+                    .append(tableName)
+                    .append(" ");
+            List<String> values = new ArrayList<>();
+            List<String> keys = new ArrayList<>(createParams.keySet().stream().toList());
+            createParams.values().stream().toList().forEach(param -> {
+                values.add("?");
+                parameters.add(new Parameter(param));
+            });
+            makeDefaultTimeStamps().forEach((k, v) -> {
+                System.out.println("key:" + k + " value:" + v);
+                keys.add(k);
+                values.add("?");
+                parameters.add(new Parameter(v));
+            });
+            queryStringBuilder
+                    .append("(")
+                    .append(String.join(",", keys)).append(")")
+                    .append(" VALUES")
+                    .append(" (")
+                    .append(String.join(",", values))
+                    .append(")");
+            System.out.println("params " + parameters.get(parameters.size() - 1) + " " + parameters.get(parameters.size() - 2));
+            return queryStringBuilder.toString();
         }
-        queryStringBuilder.append(" FROM ").append(tableName).append(" ");
-        //join
-        queryStringBuilder.append(String.join(" ", joins)).append(" ");
-        queryStringBuilder.append(String.join(" ", wheres));
-        queryStringBuilder.append(orderBy);
-        //limit
-        return queryStringBuilder.toString();
+        return "";
     }
 
     public QueryBuilder table(String tableName) {
@@ -67,7 +99,7 @@ public class QueryBuilder {
             wheres.add("AND");
         }
 
-        if (isUUID(column,tableName)) {
+        if (isUUID(column, tableName)) {
             condition.append(column).append(" = ?");
             parameters.add(new Parameter(UUID.fromString(value)));
         } else {
@@ -77,6 +109,7 @@ public class QueryBuilder {
         wheres.add(condition.toString());
         return this;
     }
+
     public QueryBuilder whereIn(String column, List<String> values) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
@@ -89,6 +122,7 @@ public class QueryBuilder {
         wheres.add(condition.toString());
         return this;
     }
+
     public QueryBuilder whereNotIn(String column, List<String> values) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
@@ -123,17 +157,15 @@ public class QueryBuilder {
         joins.add(type.toString() + " JOIN");
 
         //value.contains(".id")
-        System.out.println("IS UUID "+isUUID(value, joinTable));
-        if(isUUID(value, joinTable)) {
-            String castValue =String.format("CAST(%s as TEXT)",value);
+        System.out.println("IS UUID " + isUUID(value, joinTable));
+        if (isUUID(value, joinTable)) {
+            String castValue = String.format("CAST(%s as TEXT)", value);
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(castValue);
         } else {
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         }
-
-
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
-        System.out.println("is uuid: "+isUUID(key,joinTable));
+        System.out.println("is uuid: " + isUUID(key, joinTable));
         System.out.println("condition: " + condition);
         joins.add(condition.toString());
         return this;
@@ -169,7 +201,7 @@ public class QueryBuilder {
             while (resultSet.next()) {
                 Map<String, String> result = new HashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
-                    System.out.println(metaData.getColumnName(i)+" "+resultSet.getString(i));
+                    System.out.println(metaData.getColumnName(i) + " " + resultSet.getString(i));
                     result.put(metaData.getColumnName(i), resultSet.getString(i));
                 }
                 list.add(result);
@@ -177,6 +209,18 @@ public class QueryBuilder {
             System.out.println();
 
             return list;
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+    }
+
+    public void save() throws SQLException {
+        Connection connection = getConnection();
+
+        PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
+        try {
+            int resultSet = preparedStatement.executeUpdate();
+            System.out.println("res set "+resultSet);
         } catch (SQLException e) {
             throw new SQLException(e);
         }
@@ -190,12 +234,18 @@ public class QueryBuilder {
         return DriverManager.getConnection(url, username, password);
     }
 
+    public QueryBuilder create(Map<String, Object> data, String tableName) throws SQLException {
+        setTableName(tableName);
+        operationType = OperationType.CREATE;
+        createParams.putAll(data);
+        return this;
+    }
 
     private boolean isUUID(String column, String table) throws SQLException {
         try (Connection connection = getConnection()) { // Use try-with-resources to avoid leaks
             DatabaseMetaData metaData = connection.getMetaData();
             try (ResultSet columns = metaData.getColumns(null, null, table, null)) {
-                System.out.println("cols "+columns);
+                System.out.println("cols " + columns);
                 if (columns.next()) { // Move to the first row
                     String columnType = columns.getString("TYPE_NAME");
                     System.out.println("Column Type: " + columnType);
@@ -209,5 +259,13 @@ public class QueryBuilder {
             throw e; // Rethrow exception for further handling
         }
         return false; // Return false if no matching column is found
+    }
+
+    private Map<String, Object> makeDefaultTimeStamps() {
+        Map<String, Object> timeStamps = new HashMap<>();
+        java.sql.Timestamp currentTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
+        timeStamps.put("created_at", currentTime);
+        timeStamps.put("updated_at", currentTime);
+        return timeStamps;
     }
 }
