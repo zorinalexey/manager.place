@@ -21,19 +21,13 @@ public class CityApplication {
         SpringApplication.run(CityApplication.class, args);
         QueryBuilder builder = new QueryBuilder();
 
-        Map<String, Object> params = Map
-                .of(
-                        "id", UUID.randomUUID(),
-                        "int_id", 1,
-                        "name","Стерлитамак",
-                        "region_id","a1f7645b-ccc1-428a-87a5-9020c3905578",
-                        "country_id",1,
-                        "latitude",33,
-                        "longitude",45,
-                        "zoom",1
-                );
-        QueryBuilder builderQuery = builder
-                .create(params,"cities");
-        builderQuery.save();
+
+        Map<String, Object> params = Map.of("name","Стерлитамак1");
+        QueryBuilder updateOperation = builder.
+                select(List.of("name")).table("cities")
+                .where("id","da2a9d43-5c80-455c-af21-7bfeda52fb64");
+        System.out.println(updateOperation.queryString());
+        //String castValue = String.format("CAST(%s as TEXT)", value);
+        updateOperation.get();
     }
 }

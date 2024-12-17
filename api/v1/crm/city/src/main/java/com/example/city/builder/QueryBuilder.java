@@ -27,7 +27,7 @@ public class QueryBuilder {
     private Map<String, String> binds = new HashMap<>();
 
     private List<Parameter> parameters = new ArrayList<>();
-    private Map<String, Object> createParams = new HashMap<>();
+    private Map<String, Object> valueParams = new HashMap<>();
     private OperationType operationType = OperationType.READ;
 
     public String queryString() {
@@ -51,13 +51,12 @@ public class QueryBuilder {
                     .append(tableName)
                     .append(" ");
             List<String> values = new ArrayList<>();
-            List<String> keys = new ArrayList<>(createParams.keySet().stream().toList());
-            createParams.values().stream().toList().forEach(param -> {
+            List<String> keys = new ArrayList<>(valueParams.keySet().stream().toList());
+            valueParams.values().stream().toList().forEach(param -> {
                 values.add("?");
                 parameters.add(new Parameter(param));
             });
             makeDefaultTimeStamps().forEach((k, v) -> {
-                System.out.println("key:" + k + " value:" + v);
                 keys.add(k);
                 values.add("?");
                 parameters.add(new Parameter(v));
@@ -70,6 +69,16 @@ public class QueryBuilder {
                     .append(String.join(",", values))
                     .append(")");
             System.out.println("params " + parameters.get(parameters.size() - 1) + " " + parameters.get(parameters.size() - 2));
+            return queryStringBuilder.toString();
+        } else if (operationType == OperationType.UPDATE) {
+            StringBuilder queryStringBuilder = new StringBuilder("UPDATE ")
+                    .append(tableName).append(" SET ");
+            valueParams.entrySet().forEach(entry -> {
+                queryStringBuilder.append(entry.getKey()).append(" = ").append("?").append(",");
+                parameters.add(new Parameter(entry.getValue()));
+            });
+            queryStringBuilder.deleteCharAt(queryStringBuilder.length() - 1);
+            queryStringBuilder.append(" ").append(String.join(" ", wheres));
             return queryStringBuilder.toString();
         }
         return "";
@@ -91,7 +100,7 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder where(String column, String value) throws SQLException {
+    public QueryBuilder where(String column, Object value) throws SQLException {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -101,7 +110,7 @@ public class QueryBuilder {
 
         if (isUUID(column, tableName)) {
             condition.append(column).append(" = ?");
-            parameters.add(new Parameter(UUID.fromString(value)));
+            parameters.add(new Parameter(UUID.fromString(value.toString())));
         } else {
             condition.append(column).append(" = ?");
             parameters.add(new Parameter(value));
@@ -157,7 +166,6 @@ public class QueryBuilder {
         joins.add(type.toString() + " JOIN");
 
         //value.contains(".id")
-        System.out.println("IS UUID " + isUUID(value, joinTable));
         if (isUUID(value, joinTable)) {
             String castValue = String.format("CAST(%s as TEXT)", value);
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(castValue);
@@ -165,8 +173,6 @@ public class QueryBuilder {
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         }
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
-        System.out.println("is uuid: " + isUUID(key, joinTable));
-        System.out.println("condition: " + condition);
         joins.add(condition.toString());
         return this;
     }
@@ -237,7 +243,13 @@ public class QueryBuilder {
     public QueryBuilder create(Map<String, Object> data, String tableName) throws SQLException {
         setTableName(tableName);
         operationType = OperationType.CREATE;
-        createParams.putAll(data);
+        valueParams.putAll(data);
+        return this;
+    }
+    public QueryBuilder update(Map<String, Object> updateData,String table) throws SQLException {
+        setTableName(table);
+        operationType = OperationType.UPDATE;
+        valueParams.putAll(updateData);
         return this;
     }
 
@@ -268,4 +280,5 @@ public class QueryBuilder {
         timeStamps.put("updated_at", currentTime);
         return timeStamps;
     }
+
 }
