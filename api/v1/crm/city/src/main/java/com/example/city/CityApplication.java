@@ -22,12 +22,13 @@ public class CityApplication {
         QueryBuilder builder = new QueryBuilder();
 
 
-        Map<String, Object> params = Map.of("name","Стерлитамак1");
-        QueryBuilder updateOperation = builder.
-                select(List.of("name")).table("cities")
+        Map<String, Object> params = Map.of("name","Стерлитамак3","country_id",2);
+
+        QueryBuilder updateOperation = builder
+                .update(params,"cities")
                 .where("id","da2a9d43-5c80-455c-af21-7bfeda52fb64");
-        System.out.println(updateOperation.queryString());
+
         //String castValue = String.format("CAST(%s as TEXT)", value);
-        updateOperation.get();
+        updateOperation.save();
     }
 }

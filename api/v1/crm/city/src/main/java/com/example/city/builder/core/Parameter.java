@@ -1,13 +1,14 @@
 package com.example.city.builder.core;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import  java.util.UUID;
 import java.util.stream.Collectors;
-
+@Data
 @AllArgsConstructor
 public class Parameter {
     private Object value;
@@ -21,15 +22,15 @@ public class Parameter {
         } else if (value instanceof Long) {
             preparedStatement.setLong(index, (Long) value);
         } else if(value instanceof UUID) {
-//            String resultId = UUID.fromString(value.toString()).toString();
-//            preparedStatement.setString(index,resultId);
-            preparedStatement.setObject(index, value);
+            System.out.println("value is instance of UUID");
+            String resultId = UUID.fromString(value.toString()).toString();
+            //preparedStatement.setString(index,resultId);
+            preparedStatement.setObject(index, resultId);
         } else if (value instanceof Boolean) {
             preparedStatement.setBoolean(index, (Boolean) value);
         } else if (value instanceof java.sql.Timestamp) {
             preparedStatement.setTimestamp(index, (java.sql.Timestamp) value);
-        }
-        else if (value instanceof List<?>) {
+        } else if (value instanceof List<?>) {
             System.out.println("value is instance of List "+value.toString());
             List<String> list = ((List<?>) value).stream().map(Object::toString).toList();
             preparedStatement.setObject(index, String.join(",", list));

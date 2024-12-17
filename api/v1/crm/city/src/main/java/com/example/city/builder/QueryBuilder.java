@@ -31,6 +31,7 @@ public class QueryBuilder {
     private OperationType operationType = OperationType.READ;
 
     public String queryString() {
+        System.out.println("op type:" + operationType);
         if (operationType == OperationType.READ) {
             StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
             if (distinct) {
@@ -68,14 +69,15 @@ public class QueryBuilder {
                     .append(" (")
                     .append(String.join(",", values))
                     .append(")");
-            System.out.println("params " + parameters.get(parameters.size() - 1) + " " + parameters.get(parameters.size() - 2));
             return queryStringBuilder.toString();
         } else if (operationType == OperationType.UPDATE) {
             StringBuilder queryStringBuilder = new StringBuilder("UPDATE ")
                     .append(tableName).append(" SET ");
-            valueParams.entrySet().forEach(entry -> {
-                queryStringBuilder.append(entry.getKey()).append(" = ").append("?").append(",");
-                parameters.add(new Parameter(entry.getValue()));
+            System.out.println("valueParams size " + valueParams.size());
+            valueParams.forEach((key, value) -> {
+                System.out.println("key:" + key + " value:" + value);
+                queryStringBuilder.append(key).append(" = ").append("?").append(",");
+                parameters.add(new Parameter(value));
             });
             queryStringBuilder.deleteCharAt(queryStringBuilder.length() - 1);
             queryStringBuilder.append(" ").append(String.join(" ", wheres));
@@ -107,9 +109,10 @@ public class QueryBuilder {
         } else {
             wheres.add("AND");
         }
-
+        System.out.println("Is uuid ");
         if (isUUID(column, tableName)) {
-            condition.append(column).append(" = ?");
+            String castValue = String.format("CAST(%s as TEXT)", column);
+            condition.append(castValue).append(" = ?");
             parameters.add(new Parameter(UUID.fromString(value.toString())));
         } else {
             condition.append(column).append(" = ?");
@@ -185,7 +188,6 @@ public class QueryBuilder {
 
     public PreparedStatement buildPreparedStatement(Connection connection) throws SQLException {
         String statement = queryString().trim();
-        System.out.println("statement:" + statement);
         PreparedStatement preparedStatement = connection.prepareStatement(statement);
         for (int i = 0; i < parameters.size(); i++) {
             parameters.get(i).bind(preparedStatement, i + 1);
@@ -207,7 +209,6 @@ public class QueryBuilder {
             while (resultSet.next()) {
                 Map<String, String> result = new HashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
-                    System.out.println(metaData.getColumnName(i) + " " + resultSet.getString(i));
                     result.put(metaData.getColumnName(i), resultSet.getString(i));
                 }
                 list.add(result);
@@ -224,9 +225,10 @@ public class QueryBuilder {
         Connection connection = getConnection();
 
         PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
+        System.out.println("stmt "+preparedStatement.toString());
         try {
-            int resultSet = preparedStatement.executeUpdate();
-            System.out.println("res set "+resultSet);
+            boolean resultSet = preparedStatement.execute();
+            System.out.println("res set " + resultSet);
         } catch (SQLException e) {
             throw new SQLException(e);
         }
@@ -246,9 +248,11 @@ public class QueryBuilder {
         valueParams.putAll(data);
         return this;
     }
-    public QueryBuilder update(Map<String, Object> updateData,String table) throws SQLException {
+
+    public QueryBuilder update(Map<String, Object> updateData, String table) throws SQLException {
         setTableName(table);
         operationType = OperationType.UPDATE;
+        valueParams.clear();
         valueParams.putAll(updateData);
         return this;
     }
