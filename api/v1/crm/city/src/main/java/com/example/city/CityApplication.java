@@ -2,6 +2,7 @@ package com.example.city;
 
 import com.example.city.builder.QueryBuilder;
 import com.example.city.builder.CRUD.enums.JoinType;
+import com.example.city.builder.StaticQueryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -22,13 +23,22 @@ public class CityApplication {
         QueryBuilder builder = new QueryBuilder();
 
 
-        Map<String, Object> params = Map.of("name","Стерлитамак3","country_id",2);
+//        Map<String, Object> createParams = Map.of(
+//                "name", "Химки",
+//                "int_id", 1,
+//                "region_id", "6db0caaf-56e3-4750-8662-6bf7f11101fb",
+//                "country_id", 1,
+//                "latitude", 45.5,
+//                "longitude", 37,
+//                "zoom", 1
+//        );
+//
+//        QueryBuilder createOp = builder.create(createParams, "cities");
+//        createOp.save();
 
-        QueryBuilder updateOperation = builder
-                .update(params,"cities")
-                .where("id","da2a9d43-5c80-455c-af21-7bfeda52fb64");
+        StaticQueryBuilder items = StaticQueryBuilder
+                .update(Map.of("name","ХИМКИ"),"cities")Ф.where("id");
+        System.out.println(items);
 
-        //String castValue = String.format("CAST(%s as TEXT)", value);
-        updateOperation.save();
     }
 }

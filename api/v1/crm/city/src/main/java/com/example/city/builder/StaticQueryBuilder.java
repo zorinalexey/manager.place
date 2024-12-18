@@ -4,33 +4,30 @@ import com.example.city.builder.CRUD.enums.JoinType;
 import com.example.city.builder.CRUD.enums.OperationType;
 import com.example.city.builder.core.Parameter;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.converter.json.GsonBuilderUtils;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Data
-@RequiredArgsConstructor
 @Slf4j
-public class QueryBuilder {
-    private List<String> columns = new ArrayList<>();
-    private boolean distinct = false;
-    private List<String> distinctColumns;
+@Data
+public class StaticQueryBuilder {
+    private static List<String> columns = new ArrayList<>();
+    private static boolean distinct = false;
+    private static List<String> distinctColumns;
 
-    private String tableName;
-    private List<String> wheres = new ArrayList<>();
-    private List<String> joins = new ArrayList<>();
-    private StringBuilder orderBy = new StringBuilder();
-    private Map<String, String> binds = new HashMap<>();
+    private static String tableName;
+    private static List<String> wheres = new ArrayList<>();
+    private static List<String> joins = new ArrayList<>();
+    private static StringBuilder orderBy = new StringBuilder();
+    private static Map<String, String> binds = new HashMap<>();
 
-    private List<Parameter> parameters = new LinkedList<>();
-    private Map<String, Object> valueParams = new LinkedHashMap<>();
-    private OperationType operationType = OperationType.READ;
+    private static List<Parameter> parameters = new LinkedList<>();
+    private static Map<String, Object> valueParams = new LinkedHashMap<>();
+    private static OperationType operationType = OperationType.READ;
 
-    public String queryString() {
+    public static String queryString() {
         System.out.println("op type:" + operationType);
         if (operationType == OperationType.READ) {
             StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
@@ -87,23 +84,23 @@ public class QueryBuilder {
         return "";
     }
 
-    public QueryBuilder table(String tableName) {
-        setTableName(tableName);
-        return this;
+    public static StaticQueryBuilder table(String table) {
+        tableName = table;
+        return getInstance();
     }
 
-    public QueryBuilder select(List<String> columnList) {
-        setColumns(columnList);
-        return this;
+    public StaticQueryBuilder select(List<String> columnList) {
+        columns = columnList;
+        return getInstance();
     }
 
-    public QueryBuilder distinct(List<String> columns) {
-        setDistinct(true);
-        setDistinctColumns(columns);
-        return this;
+    public StaticQueryBuilder distinct(List<String> columns) {
+        distinct = true;
+        distinctColumns = columns;
+        return getInstance();
     }
 
-    public QueryBuilder where(String column, Object value) throws SQLException {
+    public StaticQueryBuilder where(String column, Object value) throws SQLException {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -120,10 +117,10 @@ public class QueryBuilder {
             parameters.add(new Parameter(value));
         }
         wheres.add(condition.toString());
-        return this;
+        return getInstance();
     }
 
-    public QueryBuilder whereIn(String column, List<String> values) {
+    public StaticQueryBuilder whereIn(String column, List<String> values) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -133,10 +130,10 @@ public class QueryBuilder {
         condition.append(column).append(" in (").append("?").append(")");
         parameters.add(new Parameter(values));
         wheres.add(condition.toString());
-        return this;
+        return getInstance();
     }
 
-    public QueryBuilder whereNotIn(String column, List<String> values) {
+    public StaticQueryBuilder whereNotIn(String column, List<String> values) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -146,10 +143,10 @@ public class QueryBuilder {
         condition.append(column).append(" not").append(" in (").append("?").append(")");
         parameters.add(new Parameter(values));
         wheres.add(condition.toString());
-        return this;
+        return getInstance();
     }
 
-    public QueryBuilder or(String column, String value) {
+    public StaticQueryBuilder or(String column, String value) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             throw new RuntimeException("Cant set OR in the beginning of the query");
@@ -162,10 +159,10 @@ public class QueryBuilder {
         }
         wheres.add(condition.toString());
         wheres.add(")");
-        return this;
+        return getInstance();
     }
 
-    public QueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
+    public StaticQueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
         StringBuilder condition = new StringBuilder();
         joins.add(type.toString() + " JOIN");
 
@@ -178,7 +175,7 @@ public class QueryBuilder {
         }
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         joins.add(condition.toString());
-        return this;
+        return getInstance();
     }
 
     //SELECT * FROM Customers
@@ -225,8 +222,6 @@ public class QueryBuilder {
     public void save() throws SQLException {
         Connection connection = getConnection();
 
-
-
         PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
         System.out.println("stmt "+preparedStatement.toString());
         try {
@@ -245,26 +240,26 @@ public class QueryBuilder {
         return DriverManager.getConnection(url, username, password);
     }
 
-    public QueryBuilder create(Map<String, Object> data, String tableName) throws SQLException {
-        setTableName(tableName);
+    public StaticQueryBuilder create(Map<String, Object> data, String table) throws SQLException {
+        tableName = table;
         operationType = OperationType.CREATE;
         valueParams.putAll(data);
-        return this;
+        return getInstance();
     }
 
-    public QueryBuilder update(Map<String, Object> updateData, String table) throws SQLException {
-        setTableName(table);
+    public static StaticQueryBuilder update(Map<String, Object> updateData, String table) throws SQLException {
+        tableName = table;
         operationType = OperationType.UPDATE;
         valueParams.putAll(new LinkedHashMap<>(updateData));
         for (Map.Entry<String, Object> entry : valueParams.entrySet()) {
             parameters.add(new Parameter(entry.getValue()));
         }
-        return this;
+        return getInstance();
     }
-    public QueryBuilder delete(String table) throws SQLException {
-        setTableName(table);
+    public StaticQueryBuilder delete(String table) throws SQLException {
+        tableName = table;
         operationType = OperationType.DELETE;
-        return this;
+        return getInstance();
     }
 
     private boolean isUUID(String column, String table) throws SQLException {
@@ -287,12 +282,14 @@ public class QueryBuilder {
         return false; // Return false if no matching column is found
     }
 
-    private Map<String, Object> makeDefaultTimeStamps() {
+    private static Map<String, Object> makeDefaultTimeStamps() {
         Map<String, Object> timeStamps = new HashMap<>();
         java.sql.Timestamp currentTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
         timeStamps.put("created_at", currentTime);
         timeStamps.put("updated_at", currentTime);
         return timeStamps;
     }
-
+    private static StaticQueryBuilder getInstance() {
+        return new StaticQueryBuilder();
+    }
 }
