@@ -37,7 +37,8 @@ public class CityApplication {
 //        createOp.save();
 
         StaticQueryBuilder items = StaticQueryBuilder
-                .update(Map.of("name","ХИМКИ"),"cities")Ф.where("id");
+                .update(Map.of("name","ХИМКИ"),"cities")
+                .where("id","fd85ca58-adc8-4bbc-bdea-02190ecacc25");
         System.out.println(items);
 
     }
