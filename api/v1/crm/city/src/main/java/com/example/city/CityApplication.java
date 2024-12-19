@@ -20,26 +20,16 @@ import java.util.UUID;
 public class CityApplication {
     public static void main(String[] args) throws SQLException {
         SpringApplication.run(CityApplication.class, args);
-        QueryBuilder builder = new QueryBuilder();
 
+        Map<String,Object> firstCity = StaticQueryBuilder
+                .table("cities").select(List.of("*"))
+                .where("region_id","6db0caaf-56e3-4750-8662-6bf7f11101fb")
+                .first();
 
-//        Map<String, Object> createParams = Map.of(
-//                "name", "Химки",
-//                "int_id", 1,
-//                "region_id", "6db0caaf-56e3-4750-8662-6bf7f11101fb",
-//                "country_id", 1,
-//                "latitude", 45.5,
-//                "longitude", 37,
-//                "zoom", 1
-//        );
-//
-//        QueryBuilder createOp = builder.create(createParams, "cities");
-//        createOp.save();
-
-        StaticQueryBuilder items = StaticQueryBuilder
-                .update(Map.of("name","ХИМКИ"),"cities")
-                .where("id","fd85ca58-adc8-4bbc-bdea-02190ecacc25");
-        System.out.println(items);
+        List<Map<String,Object>> firstRegions = StaticQueryBuilder
+                .table("regions")
+                .whereIn("name",List.of("Город Москва","Республика Башкортостан")).get();
+        System.out.println(firstRegions);
 
     }
 }

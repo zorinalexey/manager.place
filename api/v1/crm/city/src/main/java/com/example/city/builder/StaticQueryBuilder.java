@@ -19,6 +19,7 @@ public class StaticQueryBuilder {
 
     private static String tableName;
     private static List<String> wheres = new ArrayList<>();
+    private static Integer limit;
     private static List<String> joins = new ArrayList<>();
     private static StringBuilder orderBy = new StringBuilder();
     private static Map<String, String> binds = new HashMap<>();
@@ -31,18 +32,25 @@ public class StaticQueryBuilder {
         System.out.println("op type:" + operationType);
         if (operationType == OperationType.READ) {
             StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
+
             if (distinct) {
                 queryStringBuilder.append("DISTINCT ").append(String.join(",", distinctColumns));
             } else {
-                log.info("columns {}", columns);
-                queryStringBuilder.append(String.join(",", columns));
+                if(!columns.isEmpty()) {
+                    queryStringBuilder.append(String.join(",", columns));
+                } else {
+                    queryStringBuilder.append("*");
+                }
             }
             queryStringBuilder.append(" FROM ").append(tableName).append(" ");
             //join
             queryStringBuilder.append(String.join(" ", joins)).append(" ");
             queryStringBuilder.append(String.join(" ", wheres));
             queryStringBuilder.append(orderBy);
-            //limit
+            if (limit!=null) {
+                queryStringBuilder.append(" LIMIT ").append(limit);
+            }
+
             return queryStringBuilder.toString();
         } else if (operationType == OperationType.CREATE) {
             StringBuilder queryStringBuilder = new StringBuilder("INSERT INTO ")
@@ -107,8 +115,8 @@ public class StaticQueryBuilder {
         } else {
             wheres.add("AND");
         }
-        System.out.println("Is uuid ");
         if (isUUID(column, tableName)) {
+            System.out.println("Is uuid column "+column);
             String castValue = String.format("CAST(%s as TEXT)", column);
             condition.append(castValue).append(" = ?");
             parameters.add(new Parameter(UUID.fromString(value.toString())));
@@ -127,8 +135,14 @@ public class StaticQueryBuilder {
         } else {
             wheres.add("AND");
         }
-        condition.append(column).append(" in (").append("?").append(")");
-        parameters.add(new Parameter(values));
+        condition.append(column).append(" IN (");
+        values.forEach(value -> {
+            condition.append("?").append(",");
+            parameters.add(new Parameter(value));
+        });
+        condition.deleteCharAt(condition.length() - 1);
+        condition.append(")");
+        //parameters.add(new Parameter(values));
         wheres.add(condition.toString());
         return getInstance();
     }
@@ -161,6 +175,10 @@ public class StaticQueryBuilder {
         wheres.add(")");
         return getInstance();
     }
+    public StaticQueryBuilder limit(Integer limitNumber) {
+        limit = limitNumber;
+        return getInstance();
+    }
 
     public StaticQueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
         StringBuilder condition = new StringBuilder();
@@ -186,6 +204,7 @@ public class StaticQueryBuilder {
 
     public PreparedStatement buildPreparedStatement(Connection connection) throws SQLException {
         String statement = queryString().trim();
+        System.out.println("stmt "+statement);
         PreparedStatement preparedStatement = connection.prepareStatement(statement);
         for (int i = 0; i < parameters.size(); i++) {
             parameters.get(i).bind(preparedStatement, i + 1);
@@ -193,19 +212,41 @@ public class StaticQueryBuilder {
         return preparedStatement;
     }
 
-
-    public List<Map<String, String>> get() throws SQLException {
-
+    public Map<String,Object> first() throws SQLException {
         Connection connection = getConnection();
-
+        limit(1);
         PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
         try (ResultSet resultSet = preparedStatement.executeQuery()) {
             ResultSetMetaData metaData = resultSet.getMetaData();
             int columnCount = metaData.getColumnCount();
 
-            List<Map<String, String>> list = new ArrayList<>();
+            Map<String, Object> result = new HashMap<>();
             while (resultSet.next()) {
-                Map<String, String> result = new HashMap<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    result.put(metaData.getColumnName(i), resultSet.getString(i));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }finally {
+            reset();
+        }
+    }
+
+    public List<Map<String, Object>> get() throws SQLException {
+
+        Connection connection = getConnection();
+        System.out.println("Params "+parameters.toString());
+        PreparedStatement preparedStatement = this.buildPreparedStatement(connection);
+        System.out.println("PreparedStatement "+preparedStatement.toString());
+        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            List<Map<String, Object>> list = new ArrayList<>();
+            while (resultSet.next()) {
+                Map<String, Object> result = new HashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
                     result.put(metaData.getColumnName(i), resultSet.getString(i));
                 }
@@ -216,6 +257,8 @@ public class StaticQueryBuilder {
             return list;
         } catch (SQLException e) {
             throw new SQLException(e);
+        } finally {
+            reset();
         }
     }
 
@@ -229,6 +272,8 @@ public class StaticQueryBuilder {
             System.out.println("res set " + resultSet);
         } catch (SQLException e) {
             throw new SQLException(e);
+        }finally {
+            reset();
         }
     }
 
@@ -265,7 +310,7 @@ public class StaticQueryBuilder {
     private boolean isUUID(String column, String table) throws SQLException {
         try (Connection connection = getConnection()) { // Use try-with-resources to avoid leaks
             DatabaseMetaData metaData = connection.getMetaData();
-            try (ResultSet columns = metaData.getColumns(null, null, table, null)) {
+            try (ResultSet columns = metaData.getColumns(null, null, table, column)) {
                 System.out.println("cols " + columns);
                 if (columns.next()) { // Move to the first row
                     String columnType = columns.getString("TYPE_NAME");
@@ -291,5 +336,19 @@ public class StaticQueryBuilder {
     }
     private static StaticQueryBuilder getInstance() {
         return new StaticQueryBuilder();
+    }
+    public static void reset() {
+        columns = new ArrayList<>();
+        distinct = false;
+        distinctColumns = null;
+        tableName = null;
+        wheres = new ArrayList<>();
+        limit = null;
+        joins = new ArrayList<>();
+        orderBy = new StringBuilder();
+        binds = new HashMap<>();
+        parameters = new ArrayList<>();
+        valueParams = new HashMap<>();
+        operationType = OperationType.READ;
     }
 }
