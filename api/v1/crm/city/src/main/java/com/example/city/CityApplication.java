@@ -25,11 +25,11 @@ public class CityApplication {
                 .table("cities").select(List.of("*"))
                 .where("region_id","6db0caaf-56e3-4750-8662-6bf7f11101fb")
                 .first();
-
+        System.out.println("First city "+firstCity);
         List<Map<String,Object>> joinResults = StaticQueryBuilder
                 .table("cities")
-                .select(List.of("regions.name as region_name","cities.region_id","cities.name"))
-                .join("regions","regions.id","region_id",JoinType.INNER).get();
+                .select(List.of("regions.name as region_name","cities.name"))
+                .join("regions","regions.id","region_id").get();
         System.out.println(joinResults);
 
     }

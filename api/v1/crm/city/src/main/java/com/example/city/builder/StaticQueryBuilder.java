@@ -21,6 +21,7 @@ public class StaticQueryBuilder {
     private static List<String> wheres = new ArrayList<>();
     private static Integer limit;
     private static List<String> joins = new ArrayList<>();
+    private static List<String> groupBy = new ArrayList();
     private static StringBuilder orderBy = new StringBuilder();
     private static Map<String, String> binds = new HashMap<>();
 
@@ -46,6 +47,7 @@ public class StaticQueryBuilder {
             //join
             queryStringBuilder.append(String.join(" ", joins)).append(" ");
             queryStringBuilder.append(String.join(" ", wheres));
+            //group by
             queryStringBuilder.append(orderBy);
             if (limit!=null) {
                 queryStringBuilder.append(" LIMIT ").append(limit);
@@ -99,6 +101,11 @@ public class StaticQueryBuilder {
 
     public StaticQueryBuilder select(List<String> columnList) {
         columns = columnList;
+        return getInstance();
+    }
+
+    public StaticQueryBuilder count(String column) {
+        columns.add(String.format("COUNT (%s)",column));
         return getInstance();
     }
 
@@ -187,18 +194,14 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
+    public StaticQueryBuilder join(String joinTable, String key, String value) throws SQLException {
         StringBuilder condition = new StringBuilder();
-        joins.add(type.toString() + " JOIN");
-
-        //value.contains(".id")
-        if (isUUID(value, tableName) || isUUID( key.split("\\.")[1], joinTable)) {
-            System.out.println("Table column "+joinTable+" is UUID"+value);
+        joins.add(JoinType.INNER + " JOIN");
+        if (keyOrValueAreUUID(key,value,joinTable,tableName)) {
             String castKey = String.format("CAST(%s as TEXT)", key);
             String castValue = String.format("CAST(%s as TEXT)", value);
             condition.append(joinTable).append(" ON ").append(castKey).append(" = ").append(castValue);
         } else {
-            System.out.println("Table column "+joinTable+" is NOT UUID "+value);
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         }
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
@@ -206,6 +209,33 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
+    public StaticQueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
+        StringBuilder condition = new StringBuilder();
+        joins.add(type.toString() + " JOIN");
+
+        //value.contains(".id")
+        if (keyOrValueAreUUID(key,value,joinTable,tableName)) {
+            String castKey = String.format("CAST(%s as TEXT)", key);
+            String castValue = String.format("CAST(%s as TEXT)", value);
+            condition.append(joinTable).append(" ON ").append(castKey).append(" = ").append(castValue);
+        } else {
+            condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
+        }
+        //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
+        joins.add(condition.toString());
+        return getInstance();
+    }
+
+    public StaticQueryBuilder groupBy(String column) {
+        StringBuilder sentence = new StringBuilder();
+        sentence.append("GROUP BY ").append(column);
+        groupBy.add(sentence.toString());
+        return getInstance();
+    }
+
+    private boolean keyOrValueAreUUID(String key, String value, String joinTable,String tableName) throws SQLException {
+        return isUUID(value, tableName) || isUUID( key.split("\\.")[1], joinTable);
+    }
     //SELECT * FROM Customers
     //WHERE Country = 'Spain' AND (CustomerName LIKE 'G%' OR CustomerName LIKE 'R%');
     private boolean hasConditionBefore(String condition) {
