@@ -99,13 +99,32 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
+    //String... columns
     public StaticQueryBuilder select(List<String> columnList) {
         columns = columnList;
+        return getInstance();
+    }
+    public StaticQueryBuilder min(String column) {
+        columns.add(String.format("MIN (%s)",column));
+        return getInstance();
+    }
+
+    public StaticQueryBuilder max(String column) {
+        columns.add(String.format("MAX (%s)",column));
         return getInstance();
     }
 
     public StaticQueryBuilder count(String column) {
         columns.add(String.format("COUNT (%s)",column));
+        return getInstance();
+    }
+    public StaticQueryBuilder sum(String column) {
+        columns.add(String.format("SUM(%s)",column));
+        return getInstance();
+    }
+
+    public StaticQueryBuilder avg(String column) {
+        columns.add(String.format("AVG(%s)",column));
         return getInstance();
     }
 
@@ -131,6 +150,19 @@ public class StaticQueryBuilder {
             condition.append(column).append(" = ?");
             parameters.add(new Parameter(value));
         }
+        wheres.add(condition.toString());
+        return getInstance();
+    }
+    public StaticQueryBuilder between(String column, Object min, Object max) throws SQLException {
+        StringBuilder condition = new StringBuilder();
+        if (wheres.isEmpty()) {
+            wheres.add("WHERE");
+        } else {
+            wheres.add("AND");
+        }
+        condition.append(" ").append(column).append(" BETWEEN ? AND ? ");
+        parameters.add(new Parameter(min));
+        parameters.add(new Parameter(max));
         wheres.add(condition.toString());
         return getInstance();
     }
