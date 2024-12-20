@@ -28,7 +28,7 @@ public class CityApplication {
 
         List<Map<String,Object>> joinResults = StaticQueryBuilder
                 .table("cities")
-                .select(List.of("region_id","name"))
+                .select(List.of("regions.name as region_name","cities.region_id","cities.name"))
                 .join("regions","regions.id","region_id",JoinType.INNER).get();
         System.out.println(joinResults);
 

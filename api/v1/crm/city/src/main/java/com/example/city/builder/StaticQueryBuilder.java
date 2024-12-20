@@ -192,12 +192,13 @@ public class StaticQueryBuilder {
         joins.add(type.toString() + " JOIN");
 
         //value.contains(".id")
-        if (isUUID(value, joinTable)) {
-            System.out.println("Table column "+joinTable+" is UUID");
+        if (isUUID(value, tableName) || isUUID( key.split("\\.")[1], joinTable)) {
+            System.out.println("Table column "+joinTable+" is UUID"+value);
+            String castKey = String.format("CAST(%s as TEXT)", key);
             String castValue = String.format("CAST(%s as TEXT)", value);
-            condition.append(joinTable).append(" ON ").append(key).append(" = ").append(castValue);
+            condition.append(joinTable).append(" ON ").append(castKey).append(" = ").append(castValue);
         } else {
-            System.out.println("Table column "+joinTable+" is NOT UUID");
+            System.out.println("Table column "+joinTable+" is NOT UUID "+value);
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         }
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
@@ -320,10 +321,10 @@ public class StaticQueryBuilder {
         try (Connection connection = getConnection()) { // Use try-with-resources to avoid leaks
             DatabaseMetaData metaData = connection.getMetaData();
             try (ResultSet columns = metaData.getColumns(null, null, table, column)) {
-                System.out.println("cols " + columns);
+
                 if (columns.next()) { // Move to the first row
                     String columnType = columns.getString("TYPE_NAME");
-                    System.out.println("Column Type: " + columnType);
+                    System.out.println("column type "+columnType);
                     return "uuid".equalsIgnoreCase(columnType); // Check if the type is UUID
                 } else {
                     System.out.println("Column not found: " + column);
