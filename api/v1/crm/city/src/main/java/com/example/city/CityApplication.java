@@ -26,10 +26,11 @@ public class CityApplication {
                 .where("region_id","6db0caaf-56e3-4750-8662-6bf7f11101fb")
                 .first();
 
-        List<Map<String,Object>> firstRegions = StaticQueryBuilder
-                .table("regions")
-                .whereIn("name",List.of("Город Москва","Республика Башкортостан")).get();
-        System.out.println(firstRegions);
+        List<Map<String,Object>> joinResults = StaticQueryBuilder
+                .table("cities")
+                .select(List.of("region_id","name"))
+                .join("regions","regions.id","region_id",JoinType.INNER).get();
+        System.out.println(joinResults);
 
     }
 }

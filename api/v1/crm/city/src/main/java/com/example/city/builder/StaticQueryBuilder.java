@@ -154,8 +154,15 @@ public class StaticQueryBuilder {
         } else {
             wheres.add("AND");
         }
-        condition.append(column).append(" not").append(" in (").append("?").append(")");
-        parameters.add(new Parameter(values));
+
+        condition.append(column).append(" NOT IN (");
+        values.forEach(value -> {
+            condition.append("?").append(",");
+            parameters.add(new Parameter(value));
+        });
+        condition.deleteCharAt(condition.length() - 1);
+        condition.append(")");
+
         wheres.add(condition.toString());
         return getInstance();
     }
@@ -186,9 +193,11 @@ public class StaticQueryBuilder {
 
         //value.contains(".id")
         if (isUUID(value, joinTable)) {
+            System.out.println("Table column "+joinTable+" is UUID");
             String castValue = String.format("CAST(%s as TEXT)", value);
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(castValue);
         } else {
+            System.out.println("Table column "+joinTable+" is NOT UUID");
             condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
         }
         //condition.append(joinTable).append(" ON ").append(key).append(" = ").append(value);
