@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: migrations/create_countries_table.yaml
+      relativeToChangelogFile: true

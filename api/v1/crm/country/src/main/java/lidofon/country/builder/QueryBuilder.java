@@ -1,9 +1,9 @@
-package com.example.city.builder;
+package lidofon.country.builder;
 
-import com.example.city.builder.CRUD.enums.JoinType;
-import com.example.city.builder.CRUD.enums.OperationType;
-import com.example.city.builder.core.Parameter;
-import lombok.Data;
+
+import lidofon.country.builder.CRUD.enums.JoinType;
+import lidofon.country.builder.CRUD.enums.OperationType;
+import lidofon.country.builder.core.Parameter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
-public class StaticQueryBuilder {
+public class QueryBuilder {
     private static List<String> columns = new ArrayList<>();
     private static boolean distinct = false;
     private static List<String> distinctColumns;
@@ -29,7 +29,6 @@ public class StaticQueryBuilder {
     private static OperationType operationType = OperationType.READ;
 
     public static String queryString() {
-        System.out.println("op type:" + operationType);
         if (operationType == OperationType.READ) {
             StringBuilder queryStringBuilder = new StringBuilder("SELECT ");
 
@@ -96,47 +95,47 @@ public class StaticQueryBuilder {
         return "";
     }
 
-    public static StaticQueryBuilder table(String table) {
+    public static QueryBuilder table(String table) {
         tableName = table;
         return getInstance();
     }
 
     //String... columns
-    public StaticQueryBuilder select(List<String> columnList) {
+    public QueryBuilder select(List<String> columnList) {
         columns = columnList;
         return getInstance();
     }
-    public StaticQueryBuilder min(String column) {
+    public QueryBuilder min(String column) {
         columns.add(String.format("MIN (%s)",column));
         return getInstance();
     }
 
-    public StaticQueryBuilder max(String column) {
+    public QueryBuilder max(String column) {
         columns.add(String.format("MAX (%s)",column));
         return getInstance();
     }
 
-    public StaticQueryBuilder count(String column) {
+    public QueryBuilder count(String column) {
         columns.add(String.format("COUNT (%s)",column));
         return getInstance();
     }
-    public StaticQueryBuilder sum(String column) {
+    public QueryBuilder sum(String column) {
         columns.add(String.format("SUM(%s)",column));
         return getInstance();
     }
 
-    public StaticQueryBuilder avg(String column) {
+    public QueryBuilder avg(String column) {
         columns.add(String.format("AVG(%s)",column));
         return getInstance();
     }
 
-    public StaticQueryBuilder distinct(List<String> columns) {
+    public QueryBuilder distinct(List<String> columns) {
         distinct = true;
         distinctColumns = columns;
         return getInstance();
     }
 
-    public StaticQueryBuilder where(String column, Object value) throws SQLException {
+    public QueryBuilder where(String column, Object value) throws SQLException {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -155,7 +154,7 @@ public class StaticQueryBuilder {
         wheres.add(condition.toString());
         return getInstance();
     }
-    public StaticQueryBuilder between(String column, Object min, Object max) throws SQLException {
+    public QueryBuilder between(String column, Object min, Object max) throws SQLException {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -169,7 +168,7 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder whereIn(String column, List<String> values) {
+    public QueryBuilder whereIn(String column, List<String> values) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -188,7 +187,7 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder whereNotIn(String column, List<String> values) {
+    public QueryBuilder whereNotIn(String column, List<String> values) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             wheres.add("WHERE");
@@ -208,7 +207,7 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder or(String column, String value) {
+    public QueryBuilder or(String column, String value) {
         StringBuilder condition = new StringBuilder();
         if (wheres.isEmpty()) {
             throw new RuntimeException("Cant set OR in the beginning of the query");
@@ -223,12 +222,12 @@ public class StaticQueryBuilder {
         wheres.add(")");
         return getInstance();
     }
-    public StaticQueryBuilder limit(Integer limitNumber) {
+    public QueryBuilder limit(Integer limitNumber) {
         limit = limitNumber;
         return getInstance();
     }
 
-    public StaticQueryBuilder join(String joinTable, String key, String value) throws SQLException {
+    public QueryBuilder join(String joinTable, String key, String value) throws SQLException {
         StringBuilder condition = new StringBuilder();
         joins.add(JoinType.INNER + " JOIN");
         if (keyOrValueAreUUID(key,value,joinTable,tableName)) {
@@ -243,7 +242,7 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
+    public QueryBuilder join(String joinTable, String key, String value, JoinType type) throws SQLException {
         StringBuilder condition = new StringBuilder();
         joins.add(type.toString() + " JOIN");
 
@@ -260,13 +259,13 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder groupBy(String column) {
+    public QueryBuilder groupBy(String column) {
         StringBuilder sentence = new StringBuilder();
         sentence.append("GROUP BY ").append(column);
         groupBy.add(sentence.toString());
         return getInstance();
     }
-    public StaticQueryBuilder orderBy(String column) {
+    public QueryBuilder orderBy(String column) {
         StringBuilder sentence = new StringBuilder();
         if(groupBy.isEmpty()){
             sentence.append("ORDER BY ");
@@ -276,7 +275,7 @@ public class StaticQueryBuilder {
         return getInstance();
     }
 
-    public StaticQueryBuilder orderBy(String column,String order) {
+    public QueryBuilder orderBy(String column, String order) {
         StringBuilder sentence = new StringBuilder();
         if(groupBy.isEmpty()){
             sentence.append("ORDER BY ");
@@ -371,22 +370,22 @@ public class StaticQueryBuilder {
     }
 
     private static Connection getConnection() throws SQLException {
-        String url = "jdbc:postgresql://localhost:5432/lidofon";
+        String url = "jdbc:postgresql://localhost:5433/manager_place";
         String username = "user";
         String password = "password";
 
         return DriverManager.getConnection(url, username, password);
     }
 
-    public StaticQueryBuilder create(Map<String, Object> data, String table) throws SQLException {
-        tableName = table;
+    public QueryBuilder create(Map<String, Object> data) throws SQLException {
+        //tableName = table;
         operationType = OperationType.CREATE;
         valueParams.putAll(data);
         return getInstance();
     }
 
-    public static StaticQueryBuilder update(Map<String, Object> updateData, String table) throws SQLException {
-        tableName = table;
+    public QueryBuilder update(Map<String, Object> updateData) throws SQLException {
+        //tableName = table;
         operationType = OperationType.UPDATE;
         valueParams.putAll(new LinkedHashMap<>(updateData));
         for (Map.Entry<String, Object> entry : valueParams.entrySet()) {
@@ -394,9 +393,14 @@ public class StaticQueryBuilder {
         }
         return getInstance();
     }
-    public StaticQueryBuilder delete(String table) throws SQLException {
+    public QueryBuilder delete(String table) throws SQLException {
         tableName = table;
         operationType = OperationType.DELETE;
+        return getInstance();
+    }
+    public QueryBuilder softDelete() throws SQLException {
+        String deleted_at = LocalDateTime.now().toString();
+        QueryBuilder.table(tableName).update(Map.of("deleted_at",deleted_at));
         return getInstance();
     }
 
@@ -422,13 +426,13 @@ public class StaticQueryBuilder {
 
     private static Map<String, Object> makeDefaultTimeStamps() {
         Map<String, Object> timeStamps = new HashMap<>();
-        java.sql.Timestamp currentTime = java.sql.Timestamp.valueOf(LocalDateTime.now());
+        Timestamp currentTime = Timestamp.valueOf(LocalDateTime.now());
         timeStamps.put("created_at", currentTime);
         timeStamps.put("updated_at", currentTime);
         return timeStamps;
     }
-    private static StaticQueryBuilder getInstance() {
-        return new StaticQueryBuilder();
+    private static QueryBuilder getInstance() {
+        return new QueryBuilder();
     }
     public static void reset() {
         columns = new ArrayList<>();
