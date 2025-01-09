@@ -1,0 +1,34 @@
+server:
+  port : 8082
+spring:
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    driver-class-name: org.postgresql.Driver
+  docker:
+    compose:
+      file: /home/ali/Документы/work/lidofon-java/docker-compose.yml
+  security:
+    user:
+      password: password
+  web:
+    mvc:
+      servlet:
+        path: /api/v1
+  application:
+    name: lidofon
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/manager_place
+    username: user
+    password: password
+  cloud:
+    compatibility-verifier:
+      enabled: false
+jpa:
+  database-platform: org.hibernate.dialect.PostgreSQLDialect
+  hibernate:
+    ddl-auto: none
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true

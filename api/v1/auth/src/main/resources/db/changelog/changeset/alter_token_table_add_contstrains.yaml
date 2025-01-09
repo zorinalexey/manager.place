@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: alter-token-table-add-constr
+      author: lidofon
+      changes:
+        - addUniqueConstraint:
+            columnNames: id
+            tableName: tokens
+            constraintName: tokens_id_unique
+        - addUniqueConstraint:
+            columnNames: value
+            tableName: tokens
+            constraintName: tokens_value_unique

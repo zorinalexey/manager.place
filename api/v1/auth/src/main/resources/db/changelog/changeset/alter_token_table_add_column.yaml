@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: alter-token-table
+      author: lidofon
+      changes:
+        - addColumn:
+            tableName: tokens
+            columns:
+              - column:
+                  name: value
+                  type: varchar(255)
+                  constraints:
+                    nullable: false

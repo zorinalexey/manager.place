@@ -399,7 +399,7 @@ public class QueryBuilder {
         return getInstance();
     }
     public QueryBuilder softDelete() throws SQLException {
-        String deleted_at = LocalDateTime.now().toString();
+        LocalDateTime deleted_at = LocalDateTime.now();
         QueryBuilder.table(tableName).update(Map.of("deleted_at",deleted_at));
         return getInstance();
     }

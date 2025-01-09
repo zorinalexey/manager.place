@@ -30,6 +30,8 @@ public class Parameter {
             preparedStatement.setBoolean(index, (Boolean) value);
         } else if (value instanceof java.sql.Timestamp) {
             preparedStatement.setTimestamp(index, (java.sql.Timestamp) value);
+        } else if (value instanceof java.time.LocalDateTime) {
+            preparedStatement.setTimestamp(index, java.sql.Timestamp.valueOf((java.time.LocalDateTime) value));
         } else if (value instanceof List<?>) {
             List<String> list = ((List<?>) value).stream().map(Object::toString).toList();
             preparedStatement.setObject(index, String.join(",", list));

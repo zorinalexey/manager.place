@@ -1,0 +1,119 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-employees-table
+      author: lidofon
+      changes:
+        - createTable:
+            tableName: employees
+            schemaName: public
+            columns:
+              - column:
+                  name: id
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: int_id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: login
+                  type: varchar(255)
+              - column:
+                  name: last_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: middle_name
+                  type: varchar(255)
+              - column:
+                  name: date_of_birth
+                  type: date
+              - column:
+                  name: virtual_number
+                  type: varchar(255)
+              - column:
+                  name: phone
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operator_group_id
+                  type: varchar(40)
+              - column:
+                  name: external_id
+                  type: varchar(255)
+              - column:
+                  name: add_external_number
+                  type: varchar(255)
+              - column:
+                  name: role_id
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city_id
+                  type: varchar(40)
+              - column:
+                  name: region_id
+                  type: varchar(40)
+              - column:
+                  name: country_id
+                  type: varchar(40)
+              - column:
+                  name: is_blocked
+                  type: bool
+                  defaultValue: false
+              - column:
+                  name: status
+                  type: varchar(255)
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamp(0)
+              - column:
+                  name: created_at
+                  type: timestamp(0)
+              - column:
+                  name: updated_at
+                  type: timestamp(0)
+        - addUniqueConstraint:
+            columnNames: email
+            tableName: employees
+            constraintName: employees_email_unique
+        - addUniqueConstraint:
+            columnNames: id
+            tableName: employees
+            constraintName: employees_id_unique
+        - addUniqueConstraint:
+            columnNames: password
+            tableName: employees
+            constraintName: employees_password_unique
+        - addUniqueConstraint:
+            columnNames: phone
+            tableName: employees
+            constraintName: employees_phone_unique
+        - addForeignKeyConstraint:
+            baseTableName: employees
+            baseColumnNames: role_id
+            referencedTableName: roles
+            referencedColumnNames: id
+            constraintName: employees_role_id_foreign

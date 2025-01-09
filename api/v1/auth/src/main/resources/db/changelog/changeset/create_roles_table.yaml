@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-roles-table
+      author: lidofon
+      changes:
+        - createTable:
+            tableName: roles
+            schemaName: public
+            columns:
+              - column:
+                  name: id
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: int_id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: default_page
+                  type: varchar(255)
+              - column:
+                  name: permissions
+                  type: json
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: bool
+                  defaultValue: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated
+                  type: bool
+                  defaultValue: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamp(0)
+              - column:
+                  name: created_at
+                  type: timestamp(0)
+              - column:
+                  name: updated_at
+                  type: timestamp(0)
+        - addUniqueConstraint:
+            columnNames: id
+            tableName: roles
+            constraintName: roles_id_unique
+        - addUniqueConstraint:
+            columnNames: name
+            tableName: roles
+            constraintName: roles_name_unique
