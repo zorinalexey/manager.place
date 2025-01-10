@@ -11,3 +11,18 @@ databaseChangeLog:
                   type: varchar(255)
                   constraints:
                     nullable: false
+              - column:
+                  name: user_id
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ip
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_agent
+                  type: varchar(255)
+                  constraints:
+                    nullable: false

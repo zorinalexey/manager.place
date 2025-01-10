@@ -11,3 +11,9 @@ databaseChangeLog:
             columnNames: value
             tableName: tokens
             constraintName: tokens_value_unique
+        - addForeignKeyConstraint:
+            baseTableName: tokens
+            baseColumnNames: user_id
+            referencedTableName: employees
+            referencedColumnNames: id
+            constraintName: tokens_user_id_foreign

@@ -1,5 +1,6 @@
 package lidofon.auth.service;
 
+import lidofon.auth.dto.UserDto;
 import lidofon.auth.entity.Token;
 import lidofon.auth.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +15,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TokenService {
     private final TokenRepository tokenRepository;
-    public String generateToken(String username) {
+    public String generateToken(UserDto user) {
         String tokenValue = generateRandomString();
         UUID uuid = UUID.randomUUID();
         Token token = Token.builder()
                 .id(uuid.toString())
-                .tokenValue(tokenValue)
+                .value(tokenValue)
+                .ip("127.0.0.1")
+                .userAgent("Chrome")
+                .userId(user.getId())
                 .createdAt(LocalDateTime.now())
                 .expireDate(LocalDateTime.now().plusHours(1))
                 .build();;
@@ -28,7 +32,7 @@ public class TokenService {
     }
 
     public boolean validateToken(String tokenValue) {
-        return tokenRepository.findByValue(tokenValue)
+        return tokenRepository.findFirstByValue(tokenValue)
                 .filter(token -> token.getExpireDate().isAfter(LocalDateTime.now()))
                 .isPresent();
     }

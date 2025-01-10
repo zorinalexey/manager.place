@@ -13,12 +13,17 @@ import java.time.LocalDateTime;
 @Table(name = "tokens")
 public class Token {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false, unique = true)
     private String id;
 
     @Column(name = "value",unique = true, nullable = false)
-    private String tokenValue;
-
+    private String value;
+    @Column(name = "ip",nullable = false)
+    private String ip;
+    @Column(name = "user_agent",nullable = false)
+    private String userAgent;
+    @Column(name="user_id",nullable = false)
+    private String userId;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     @Column(name = "updated_at")
