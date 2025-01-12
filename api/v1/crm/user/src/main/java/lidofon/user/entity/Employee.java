@@ -1,10 +1,12 @@
 package lidofon.user.entity;
 
 import jakarta.persistence.*;
+import lidofon.user.generator.IntId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDate;
 
@@ -20,9 +22,7 @@ public class Employee {
     private String id;
 
     @Column(name = "int_id", nullable = false, unique = true)
-//    @GeneratedValue(strategy = GenerationType.AUTO, generator = "int_id_generator")
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    //@SequenceGenerator(name = "int_id_generator", sequenceName = "your_sequence_name", allocationSize = 1)
+    @IntId
     private Long intId;
     @Column(name = "name",nullable = false)
     private String name;

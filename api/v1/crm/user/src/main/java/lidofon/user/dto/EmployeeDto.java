@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Data
 public class EmployeeDto {
     private String id;
+    private Long intId;
     @NotBlank
     @NotNull
     private String name;
