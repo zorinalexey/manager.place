@@ -26,4 +26,7 @@ public class AuthService {
         log.info("Created user: {}", userDto);
         return tokenService.generateToken(userDto);
     }
+    public Boolean validateToken(String token) {
+        return tokenService.validateToken(token);
+    }
 }

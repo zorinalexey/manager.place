@@ -9,4 +9,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface UserServiceClient {
     @PostMapping("/create")
     UserDto createUser(@RequestBody UserDto userDto);
+
 }

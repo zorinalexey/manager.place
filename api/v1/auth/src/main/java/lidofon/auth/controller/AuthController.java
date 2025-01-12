@@ -1,6 +1,7 @@
 package lidofon.auth.controller;
 
 import lidofon.auth.dto.RegisterDto;
+import lidofon.auth.dto.ValidateTokenDto;
 import lidofon.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,5 +21,9 @@ public class AuthController {
     public String register(@RequestBody RegisterDto registerDto) {
         authService.register(registerDto);
         return "register success";
+    }
+    @PostMapping("/validate-token")
+    public Boolean validateToken(@RequestBody ValidateTokenDto validateTokenDto) {
+        return authService.validateToken(validateTokenDto.getToken());
     }
 }
